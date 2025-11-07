@@ -27,7 +27,7 @@ export const StickerDataSchema = z.object({
   vin: z.string().length(17),
   make: z.string().min(1),
   model: z.string().min(1),
-  year: z.number().min(1900).max(2030),
+  year: z.number().min(1900).max(new Date().getFullYear() + 2), // Dynamic: allow models up to 2 years ahead
   trim: z.string().optional(),
   engine: z.string().optional(),
   basePrice: z.number().positive(),
@@ -35,7 +35,13 @@ export const StickerDataSchema = z.object({
   totalMSRP: z.number().positive(),
   dealerAddOns: z.array(DealerAddOnSchema).default([]),
   totalPrice: z.number().positive(),
-});
+}).refine(
+  (data) => data.totalMSRP >= data.basePrice,
+  { message: 'totalMSRP must be greater than or equal to basePrice' }
+).refine(
+  (data) => data.totalPrice >= data.totalMSRP,
+  { message: 'totalPrice must be greater than or equal to totalMSRP' }
+);
 
 export type StickerData = z.infer<typeof StickerDataSchema>;
 

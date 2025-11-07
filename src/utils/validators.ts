@@ -73,11 +73,16 @@ export function validateZipCode(zip: string): boolean {
  * Validates image file type
  */
 export function validateImageType(mimeType: string): boolean {
+  // Handle empty or missing MIME type
+  if (!mimeType || mimeType.trim() === '') {
+    throw new Error('Image MIME type is required but was not provided');
+  }
+
   const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 
   if (!allowedTypes.includes(mimeType.toLowerCase())) {
     throw new Error(
-      `Invalid image type: ${mimeType}. Allowed types: ${allowedTypes.join(', ')}`
+      `Invalid image type: "${mimeType}". Allowed types: ${allowedTypes.join(', ')}`
     );
   }
 

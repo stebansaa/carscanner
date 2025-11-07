@@ -76,7 +76,8 @@ function getMockMarketData(request: CompareRequest): {
     (_, i) => {
       // Price distribution: mostly around average, some outliers
       const offset = (Math.random() - 0.5) * 2 * variance;
-      const price = Math.round(basePrice + offset);
+      // Ensure price is always positive (minimum $1000)
+      const price = Math.max(1000, Math.round(basePrice + offset));
       prices.push(price);
 
       return {

@@ -34,9 +34,24 @@ export type Env = z.infer<typeof EnvSchema>;
 /**
  * Validated environment variables
  *
- * @throws {ZodError} If required env vars are missing or invalid
+ * @throws {Error} If required env vars are missing or invalid
  */
-export const env: Env = EnvSchema.parse(process.env);
+function parseEnv(): Env {
+  const result = EnvSchema.safeParse(process.env);
+
+  if (!result.success) {
+    console.error('❌ Invalid environment configuration:');
+    console.error(result.error.format());
+    console.error('\n💡 Please check your .env file. Required variables:');
+    console.error('   - OPENAI_API_KEY (required)');
+    console.error('\nCopy .env.example to .env and fill in the values.');
+    throw new Error('Environment validation failed');
+  }
+
+  return result.data;
+}
+
+export const env: Env = parseEnv();
 
 /**
  * Check if running in development mode

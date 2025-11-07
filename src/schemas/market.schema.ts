@@ -39,7 +39,13 @@ export const MarketDataSchema = z.object({
   sampleSize: z.number().min(0),
   radius: z.number().positive(), // miles
   zipCode: z.string().length(5).optional(),
-});
+}).refine(
+  (data) => data.minPrice <= data.avgPrice && data.avgPrice <= data.maxPrice,
+  { message: 'Market prices must satisfy: minPrice <= avgPrice <= maxPrice' }
+).refine(
+  (data) => !data.medianPrice || (data.medianPrice >= data.minPrice && data.medianPrice <= data.maxPrice),
+  { message: 'medianPrice must be between minPrice and maxPrice if provided' }
+);
 
 export type MarketData = z.infer<typeof MarketDataSchema>;
 
@@ -49,7 +55,7 @@ export type MarketData = z.infer<typeof MarketDataSchema>;
 export const CompareRequestSchema = z.object({
   make: z.string().min(1),
   model: z.string().min(1),
-  year: z.number().min(1900).max(2030),
+  year: z.number().min(1900).max(new Date().getFullYear() + 2), // Dynamic: allow models up to 2 years ahead
   trim: z.string().optional(),
   userPrice: z.number().positive(),
   zipCode: z.string().length(5).default('90210'), // Default to Beverly Hills for MVP
