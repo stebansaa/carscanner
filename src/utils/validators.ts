@@ -88,7 +88,14 @@ export function validateImageType(mimeType: string): boolean {
  * Validates image file size
  */
 export function validateImageSize(sizeInBytes: number, maxSizeMB: number): boolean {
+  const minSizeBytes = 1024; // 1KB minimum
   const maxSizeBytes = maxSizeMB * 1024 * 1024;
+
+  if (sizeInBytes < minSizeBytes) {
+    throw new Error(
+      `Image size (${sizeInBytes} bytes) is too small. Minimum size is ${minSizeBytes} bytes.`
+    );
+  }
 
   if (sizeInBytes > maxSizeBytes) {
     throw new Error(
@@ -103,6 +110,14 @@ export function validateImageSize(sizeInBytes: number, maxSizeMB: number): boole
  * Sanitizes string input (removes excess whitespace, trims)
  */
 export function sanitizeString(input: string): string {
+  if (input === null || input === undefined) {
+    throw new Error('Input string cannot be null or undefined');
+  }
+
+  if (typeof input !== 'string') {
+    throw new Error(`Expected string, got ${typeof input}`);
+  }
+
   return input.trim().replace(/\s+/g, ' ');
 }
 
@@ -110,5 +125,13 @@ export function sanitizeString(input: string): string {
  * Normalizes VIN to uppercase
  */
 export function normalizeVIN(vin: string): string {
+  if (vin === null || vin === undefined) {
+    throw new Error('VIN cannot be null or undefined');
+  }
+
+  if (typeof vin !== 'string') {
+    throw new Error(`Expected string VIN, got ${typeof vin}`);
+  }
+
   return vin.toUpperCase().trim();
 }

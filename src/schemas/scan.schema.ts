@@ -63,6 +63,46 @@ export const ScanResponseSchema = z.object({
 export type ScanResponse = z.infer<typeof ScanResponseSchema>;
 
 /**
+ * Helper function to safely parse price strings
+ */
+function parsePriceString(val: string): number {
+  // Remove all non-numeric characters except decimal point
+  const cleaned = val.replace(/[^0-9.]/g, '');
+
+  // Handle edge cases
+  if (!cleaned || cleaned === '.') {
+    throw new Error(`Invalid price string: "${val}"`);
+  }
+
+  // Handle multiple decimal points by keeping only the first one
+  const parts = cleaned.split('.');
+  const normalized = parts.length > 1
+    ? `${parts[0]}.${parts.slice(1).join('')}`
+    : cleaned;
+
+  const parsed = parseFloat(normalized);
+
+  if (!Number.isFinite(parsed) || isNaN(parsed)) {
+    throw new Error(`Could not parse price: "${val}"`);
+  }
+
+  return parsed;
+}
+
+/**
+ * Helper function to safely parse year
+ */
+function parseYear(val: string): number {
+  const parsed = parseInt(val, 10);
+
+  if (!Number.isFinite(parsed) || isNaN(parsed)) {
+    throw new Error(`Could not parse year: "${val}"`);
+  }
+
+  return parsed;
+}
+
+/**
  * Schema for raw LLM response (before validation)
  */
 export const RawLLMResponseSchema = z.object({
@@ -70,38 +110,38 @@ export const RawLLMResponseSchema = z.object({
   make: z.string(),
   model: z.string(),
   year: z.union([z.number(), z.string()]).transform((val) =>
-    typeof val === 'string' ? parseInt(val, 10) : val
+    typeof val === 'string' ? parseYear(val) : val
   ),
   trim: z.string().optional(),
   engine: z.string().optional(),
   basePrice: z.union([z.number(), z.string()]).transform((val) =>
-    typeof val === 'string' ? parseFloat(val.replace(/[^0-9.]/g, '')) : val
+    typeof val === 'string' ? parsePriceString(val) : val
   ),
   options: z
     .array(
       z.object({
         name: z.string(),
         price: z.union([z.number(), z.string()]).transform((val) =>
-          typeof val === 'string' ? parseFloat(val.replace(/[^0-9.]/g, '')) : val
+          typeof val === 'string' ? parsePriceString(val) : val
         ),
       })
     )
     .default([]),
   totalMSRP: z.union([z.number(), z.string()]).transform((val) =>
-    typeof val === 'string' ? parseFloat(val.replace(/[^0-9.]/g, '')) : val
+    typeof val === 'string' ? parsePriceString(val) : val
   ),
   dealerAddOns: z
     .array(
       z.object({
         name: z.string(),
         price: z.union([z.number(), z.string()]).transform((val) =>
-          typeof val === 'string' ? parseFloat(val.replace(/[^0-9.]/g, '')) : val
+          typeof val === 'string' ? parsePriceString(val) : val
         ),
       })
     )
     .default([]),
   totalPrice: z.union([z.number(), z.string()]).transform((val) =>
-    typeof val === 'string' ? parseFloat(val.replace(/[^0-9.]/g, '')) : val
+    typeof val === 'string' ? parsePriceString(val) : val
   ),
 });
 

@@ -70,15 +70,17 @@ export async function extractStickerData(
 
     const openai = new OpenAI({
       apiKey: env.OPENAI_API_KEY,
+      timeout: 30000, // 30 second timeout
     });
 
     // Ensure base64 has proper data URL prefix
+    // Note: image/jpeg works for most image types with OpenAI Vision API
     const imageUrl = imageBase64.startsWith('data:')
       ? imageBase64
       : `data:image/jpeg;base64,${imageBase64}`;
 
     const response = await openai.chat.completions.create({
-      model: 'gpt-4-vision-preview',
+      model: 'gpt-4o', // Updated from deprecated gpt-4-vision-preview
       messages: [
         {
           role: 'user',

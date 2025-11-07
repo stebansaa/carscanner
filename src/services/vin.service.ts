@@ -31,7 +31,22 @@ export async function decodeVIN(vin: string): Promise<VINDecodeResponse> {
 
     const url = `${env.NHTSA_API_BASE}/vehicles/DecodeVin/${normalizedVIN}?format=json`;
 
-    const response = await fetch(url);
+    // Add timeout to prevent hanging
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+    let response;
+    try {
+      response = await fetch(url, { signal: controller.signal });
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+        throw new ExternalAPIError('NHTSA', 'Request timeout after 10 seconds', 408);
+      }
+      throw fetchError;
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     if (!response.ok) {
       throw new ExternalAPIError(
@@ -127,22 +142,26 @@ export function compareWithVINData(
   const normalize = (str: string | number): string =>
     String(str).toLowerCase().trim();
 
+  // Skip comparison if VIN data is 'Unknown' (no valid data from NHTSA)
+  const isUnknown = (value: string | number | undefined): boolean =>
+    normalize(value ?? 'unknown') === 'unknown' || !value;
+
   // Check make
-  if (normalize(ocrData.make) !== normalize(vinData.make)) {
+  if (!isUnknown(vinData.make) && normalize(ocrData.make) !== normalize(vinData.make)) {
     warnings.push(
       `Make mismatch: OCR says "${ocrData.make}", VIN says "${vinData.make}"`
     );
   }
 
   // Check model
-  if (normalize(ocrData.model) !== normalize(vinData.model)) {
+  if (!isUnknown(vinData.model) && normalize(ocrData.model) !== normalize(vinData.model)) {
     warnings.push(
       `Model mismatch: OCR says "${ocrData.model}", VIN says "${vinData.model}"`
     );
   }
 
   // Check year
-  if (normalize(ocrData.year) !== normalize(vinData.year)) {
+  if (!isUnknown(vinData.year) && normalize(ocrData.year) !== normalize(vinData.year)) {
     warnings.push(
       `Year mismatch: OCR says "${ocrData.year}", VIN says "${vinData.year}"`
     );

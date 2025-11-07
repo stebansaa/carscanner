@@ -24,6 +24,19 @@ export function calculateDealScore(
 ): ScoreResult {
   const { avgPrice } = marketData;
 
+  // Validate inputs to prevent division by zero and invalid calculations
+  if (avgPrice <= 0) {
+    throw new Error('Average market price must be greater than zero');
+  }
+
+  if (userPrice <= 0) {
+    throw new Error('User price must be greater than zero');
+  }
+
+  if (!Number.isFinite(avgPrice) || !Number.isFinite(userPrice)) {
+    throw new Error('Prices must be finite numbers');
+  }
+
   // Calculate percentage difference from average
   const dealScore = ((avgPrice - userPrice) / avgPrice) * 100;
 
@@ -176,9 +189,15 @@ export function getTargetPrice(
 ): number {
   const { avgPrice, minPrice } = marketData;
 
+  // Validate aggressiveness is in valid range
+  const clampedAggression = Math.max(0, Math.min(1, aggressiveness));
+
+  // Handle edge case where minPrice might be higher than avgPrice (data quality issue)
+  const safeMinPrice = Math.min(minPrice, avgPrice);
+
   // Target between min and avg based on aggressiveness
-  const range = avgPrice - minPrice;
-  const targetDiscount = range * aggressiveness;
+  const range = avgPrice - safeMinPrice;
+  const targetDiscount = range * clampedAggression;
 
   return Math.round(avgPrice - targetDiscount);
 }
@@ -202,6 +221,14 @@ export function generateNegotiationAdvice(
 
   const savings = userPrice - targetPrice;
 
+  // Calculate starting offer, ensuring it doesn't go too low
+  // Start $500 below target, but not below minPrice or 90% of target
+  const minStartOffer = Math.max(
+    marketData.minPrice,
+    Math.round(targetPrice * 0.9)
+  );
+  const startOffer = Math.max(minStartOffer, targetPrice - 500);
+
   return `Consider negotiating to ${formatCurrency(targetPrice)} (save ${formatCurrency(savings)}). ` +
-    `Use comparable listings as leverage. Start your offer at ${formatCurrency(targetPrice - 500)}.`;
+    `Use comparable listings as leverage. Start your offer at ${formatCurrency(startOffer)}.`;
 }
